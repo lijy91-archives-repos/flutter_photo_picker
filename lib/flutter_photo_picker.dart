@@ -1,13 +1,1 @@
-import 'dart:async';
-
-import 'package:flutter/services.dart';
-
-class FlutterPhotoPicker {
-  static const MethodChannel _channel =
-      const MethodChannel('flutter_photo_picker');
-
-  static Future<String> get platformVersion async {
-    final String version = await _channel.invokeMethod('getPlatformVersion');
-    return version;
-  }
-}
+export './photo_picker.dart';
