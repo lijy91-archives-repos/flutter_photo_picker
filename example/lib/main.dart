@@ -15,12 +15,13 @@ class _MyAppState extends State<MyApp> {
 
   void _handleClickOpenPicker() async {
     List<PhotoPickerAsset> assets = await PhotoPicker.openPicker(
-      mediaType: 'image',
+      mediaType: 'any',
       multiple: true,
       limit: 3,
       selectedAssets: _selectedAssets,
       messages: {
         "Ok": "确定",
+        "Processing...": "处理中...",
         "Exceed Maximum Number Of Selection": "超过最大选择数",
         "Denied albums permissions granted": "已拒绝授予相册权限",
         "Denied camera permissions granted": "已拒绝授予相机权限",
@@ -58,6 +59,12 @@ class _MyAppState extends State<MyApp> {
             ListTile(
               title: Text('Open Picker'),
               onTap: _handleClickOpenPicker,
+            ),
+            Text(
+              '${_selectedAssets.length}'
+            ),
+            Text(
+              '${_selectedAssets.map((v) => v.toJson()).join('\n').toString()}'
             )
           ],
         )
