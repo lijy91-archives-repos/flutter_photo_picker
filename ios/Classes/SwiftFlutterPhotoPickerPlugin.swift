@@ -90,6 +90,10 @@ public class SwiftFlutterPhotoPickerPlugin: NSObject, FlutterPlugin, TLPhotosPic
     // TLPhotosPickerViewControllerDelegate
     public func dismissPhotoPicker(withTLPHAssets: [TLPHAsset]) {
         DispatchQueue.global().async {
+            DispatchQueue.main.async {
+                SVProgressHUD.show(withStatus: self.t("Processing..."))
+            }
+            
             let cachingImageManager = PHCachingImageManager()
             let fileManager = FileManager.default
             let temporaryDirectory = NSTemporaryDirectory()
@@ -108,10 +112,8 @@ public class SwiftFlutterPhotoPickerPlugin: NSObject, FlutterPlugin, TLPhotosPic
                 } else if (asset.type == .video) {
                     media.setObject("video", forKey: NSString("type"))
                 }
-                
-                let tempCopyMediaFileGroup = DispatchGroup()
-                var tempCopyMediaFileCompleted: Bool = false
 
+                let semaphore = DispatchSemaphore(value: 0)
                 asset.tempCopyMediaFile(
                     videoRequestOptions: nil,
                     imageRequestOptions: nil,
@@ -125,15 +127,15 @@ public class SwiftFlutterPhotoPickerPlugin: NSObject, FlutterPlugin, TLPhotosPic
                         media.setObject(url.absoluteString, forKey: NSString("url"))
                         media.setObject(mimeType, forKey: NSString("mimeType"))
                         
-                        let imageRequestOptions: PHImageRequestOptions = PHImageRequestOptions()
-                        imageRequestOptions.isSynchronous = true
+                        let cachingImageRequestOptions: PHImageRequestOptions = PHImageRequestOptions()
+                        cachingImageRequestOptions.isSynchronous = true
 
                         let thumbnailWidth = self.arguments!["thumbnailWidth"] as? Int ?? 300
                         let thumbnailHeight = self.arguments!["thumbnailHeight"] as? Int ?? 300
                         
                         let targetSize = CGSize(width: thumbnailWidth, height: thumbnailHeight)
 
-                        cachingImageManager.requestImage(for: asset.phAsset!, targetSize: targetSize, contentMode: .aspectFit, options: imageRequestOptions) { (image, info) in
+                        cachingImageManager.requestImage(for: asset.phAsset!, targetSize: targetSize, contentMode: .aspectFit, options: cachingImageRequestOptions) { (image, info) in
                             let thumbnailImagePath = NSString(format: "%@%@-thumbnal.jpg", temporaryDirectory, asset.originalFileName!) as String
                             let thumbnailImageURL: URL = URL(fileURLWithPath: thumbnailImagePath)
                             if (fileManager.fileExists(atPath: thumbnailImagePath)) {
@@ -147,30 +149,23 @@ public class SwiftFlutterPhotoPickerPlugin: NSObject, FlutterPlugin, TLPhotosPic
                             media.setObject(thumbnailImageURL.absoluteString, forKey: NSString("thumbnailUrl"))
                             media.setObject(image!.size.width, forKey: NSString("thumbnailWidth"))
                             media.setObject(image!.size.height, forKey: NSString("thumbnailHeight"))
+
+                            medias.append(media)
+                            
+                            semaphore.signal()
                         }
-                        
-                        tempCopyMediaFileCompleted = true
                     }
                 )
-                
-                tempCopyMediaFileGroup.enter()
-                DispatchQueue.global().async {
-                    while true {
-                        if (tempCopyMediaFileCompleted) {
-                            tempCopyMediaFileGroup.leave()
-                            break
-                        }
-                    }
-                }
-                tempCopyMediaFileGroup.wait()
 
-                medias.append(media)
+                semaphore.wait(timeout: .distantFuture)
             }
 
-            self.result!(medias)
-            self.result = nil
-            
-            print(medias)
+            DispatchQueue.main.async {
+                self.result!(medias)
+                self.result = nil
+
+                SVProgressHUD.dismiss()
+            }
         }
     }
 
