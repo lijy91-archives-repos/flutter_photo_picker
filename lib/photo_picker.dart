@@ -47,12 +47,20 @@ class PhotoPicker {
   static Future<List<PhotoPickerAsset>> openPicker({
     String mediaType = 'any', // image | video | any
     bool multiple = false,
+    int limit = 9,
+    int thumbnailWidth = 320,
+    int thumbnailHeight = 320,
+    int numberOfColumn = 3,
     List<PhotoPickerAsset> selectedAssets,
   }) async {
     List<PhotoPickerAsset> assets = [];
     var jsonArray = await _channel.invokeMethod('openPicker', {
       'mediaType': mediaType,
       'multiple': multiple,
+      'limit': limit,
+      'thumbnailWidth': thumbnailWidth,
+      'thumbnailHeight': thumbnailHeight,
+      'numberOfColumn': numberOfColumn,
       'selectedAssets': (selectedAssets ?? []).map((v) => v.toJson()).toList(),
     });
 
