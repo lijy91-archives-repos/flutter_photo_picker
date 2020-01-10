@@ -12,11 +12,11 @@ Pod::Spec.new do |s|
   s.license          = { :file => '../LICENSE' }
   s.author           = { 'LiJianying' => 'lijy91@foxmail.com' }
   s.source           = { :path => '.' }
+  s.resource = 'Classes/TLPhotoPicker/TLPhotoPickerController.bundle'
   s.source_files = 'Classes/**/*'
   s.public_header_files = 'Classes/**/*.h'
-  s.resources = "Classes/**/*.xib"
   s.dependency 'Flutter'
-  s.dependency 'TLPhotoPicker'
+  s.dependency 'SVProgressHUD'
   s.platform = :ios, '9.1'
 
   # Flutter.framework does not contain a i386 slice. Only x86_64 simulators are supported.
