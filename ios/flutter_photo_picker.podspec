@@ -13,7 +13,7 @@ Pod::Spec.new do |s|
   s.author           = { 'LiJianying' => 'lijy91@foxmail.com' }
   s.source           = { :path => '.' }
   s.resource = 'Classes/TLPhotoPicker/TLPhotoPickerController.bundle'
-  s.source_files = 'Classes/**/*'
+  s.source_files = 'Classes/**/*.{h,m,xib,swift}'
   s.public_header_files = 'Classes/**/*.h'
   s.dependency 'Flutter'
   s.dependency 'SVProgressHUD'
