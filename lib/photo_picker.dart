@@ -4,17 +4,27 @@ import 'package:flutter/services.dart';
 
 class PhotoPickerAsset {
   int selectedOrder;
-  String type;
   String identifier;
+  String type;
+  String mimeType;
+  String url;
   num width;
   num height;
+  String thumbnailUrl;
+  num thumbnailWidth;
+  num thumbnailHeight;
 
   PhotoPickerAsset({
     this.selectedOrder,
     this.identifier,
     this.type,
+    this.mimeType,
+    this.url,
     this.width,
     this.height,
+    this.thumbnailUrl,
+    this.thumbnailWidth,
+    this.thumbnailHeight,
   });
 
   factory PhotoPickerAsset.fromJson(Map<dynamic, dynamic> json) {
@@ -24,8 +34,13 @@ class PhotoPickerAsset {
       selectedOrder: json['selectedOrder'],
       identifier: json['identifier'],
       type: json['type'],
+      mimeType: json['mimeType'],
+      url: json['url'],
       width: json['width'],
       height: json['height'],
+      thumbnailUrl: json['thumbnailUrl'],
+      thumbnailWidth: json['thumbnailWidth'],
+      thumbnailHeight: json['thumbnailHeight'],
     );
   }
 
@@ -34,8 +49,13 @@ class PhotoPickerAsset {
       'selectedOrder': selectedOrder,
       'identifier': identifier,
       'type': type,
+      'mimeType': mimeType,
+      'url': url,
       'width': width,
       'height': height,
+      'thumbnailUrl': thumbnailUrl,
+      'thumbnailWidth': thumbnailWidth,
+      'thumbnailHeight': thumbnailHeight,
     };
   }
 }
@@ -52,6 +72,8 @@ class PhotoPicker {
     int thumbnailHeight = 320,
     int numberOfColumn = 3,
     List<PhotoPickerAsset> selectedAssets,
+    Map<dynamic, dynamic> options,
+    Map<dynamic, dynamic> messages,
   }) async {
     List<PhotoPickerAsset> assets = [];
     var jsonArray = await _channel.invokeMethod('openPicker', {
@@ -62,6 +84,8 @@ class PhotoPicker {
       'thumbnailHeight': thumbnailHeight,
       'numberOfColumn': numberOfColumn,
       'selectedAssets': (selectedAssets ?? []).map((v) => v.toJson()).toList(),
+      'options': options,
+      'messages': messages,
     });
 
     if (jsonArray != null) {

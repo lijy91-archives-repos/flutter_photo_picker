@@ -42,6 +42,7 @@ public class SwiftFlutterPhotoPickerPlugin: NSObject, FlutterPlugin, TLPhotosPic
         let limit: Int = self.arguments!["limit"] as! Int
         let numberOfColumn: Int = self.arguments!["numberOfColumn"] as! Int
         let selectedAssets: Array<NSDictionary> = self.arguments!["selectedAssets"] as! Array<NSDictionary>
+        let options: NSDictionary? = self.arguments!["options"] as? NSDictionary
         
         var configure = TLPhotosPickerConfigure()
         
@@ -55,6 +56,24 @@ public class SwiftFlutterPhotoPickerPlugin: NSObject, FlutterPlugin, TLPhotosPic
         configure.maxSelectedAssets = limit
         configure.numberOfColumn = numberOfColumn
         configure.autoPlay = false
+        
+        if (options != nil) {
+            if let tapHereToChange = options?["tapHereToChange"] {
+                configure.tapHereToChange = tapHereToChange as! String
+            }
+            if let cancelTitle = options?["cancelTitle"] {
+                configure.cancelTitle = cancelTitle as! String
+            }
+            if let doneTitle = options?["doneTitle"] {
+                configure.doneTitle = doneTitle as! String
+            }
+            if let emptyMessage = options?["emptyMessage"] {
+                configure.emptyMessage = emptyMessage as! String
+            }
+            if let customLocalizedTitle = options?["customLocalizedTitle"] {
+                configure.customLocalizedTitle = customLocalizedTitle as! [String: String]
+            }
+        }
 
         self.viewController = TLPhotosPickerViewController()
         self.viewController?.delegate = self
@@ -150,6 +169,8 @@ public class SwiftFlutterPhotoPickerPlugin: NSObject, FlutterPlugin, TLPhotosPic
 
             self.result!(medias)
             self.result = nil
+            
+            print(medias)
         }
     }
 
@@ -183,8 +204,8 @@ public class SwiftFlutterPhotoPickerPlugin: NSObject, FlutterPlugin, TLPhotosPic
         if (!locallyAvailable) {
             DispatchQueue.main.async {
                 if (self.downloadingImageRequestID != nil) {
-                    let alert = UIAlertController(title: "", message: "Waiting image/video download to complete", preferredStyle: .alert)
-                    alert.addAction(UIAlertAction(title: "Ok", style: .default, handler: nil))
+                    let alert = UIAlertController(title: "", message: self.t("Waiting image/video download to complete"), preferredStyle: .alert)
+                    alert.addAction(UIAlertAction(title: self.t("Ok"), style: .default, handler: nil))
                     self.viewController?.present(alert, animated: true, completion: nil)
 
                     return
@@ -215,22 +236,32 @@ public class SwiftFlutterPhotoPickerPlugin: NSObject, FlutterPlugin, TLPhotosPic
     }
 
     public func didExceedMaximumNumberOfSelection(picker: TLPhotosPickerViewController) {
-        let alert = UIAlertController(title: "", message: "Exceed Maximum Number Of Selection", preferredStyle: .alert)
-        alert.addAction(UIAlertAction(title: "Ok", style: .default, handler: nil))
+        let alert = UIAlertController(title: "", message: t("Exceed Maximum Number Of Selection"), preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: t("Ok"), style: .default, handler: nil))
         picker.present(alert, animated: true, completion: nil)
     }
     
     public func handleNoAlbumPermissions(picker: TLPhotosPickerViewController) {
         picker.dismiss(animated: true) {
-            let alert = UIAlertController(title: "", message: "Denied albums permissions granted", preferredStyle: .alert)
-            alert.addAction(UIAlertAction(title: "Ok", style: .default, handler: nil))
+            let alert = UIAlertController(title: "", message: self.t("Denied albums permissions granted"), preferredStyle: .alert)
+            alert.addAction(UIAlertAction(title: self.t("Ok"), style: .default, handler: nil))
             picker.present(alert, animated: true, completion: nil)
         }
     }
     
     public func handleNoCameraPermissions(picker: TLPhotosPickerViewController) {
-        let alert = UIAlertController(title: "", message: "Denied camera permissions granted", preferredStyle: .alert)
-        alert.addAction(UIAlertAction(title: "Ok", style: .default, handler: nil))
+        let alert = UIAlertController(title: "", message: t("Denied camera permissions granted"), preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: t("Ok"), style: .default, handler: nil))
         picker.present(alert, animated: true, completion: nil)
+    }
+    
+    private func t(_ message: String) -> String {
+        let messages: NSDictionary? = self.arguments!["messages"] as? NSDictionary
+        
+        if let m = messages?[message] {
+            return m as! String
+        }
+        
+        return message
     }
 }
