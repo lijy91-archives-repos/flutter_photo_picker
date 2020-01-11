@@ -32,3 +32,8 @@ android {
         disable 'InvalidPackage'
     }
 }
+
+dependencies {
+    implementation 'com.zhihu.android:matisse:0.5.3-beta3'
+    implementation 'com.github.bumptech.glide:glide:4.9.0'
+}
