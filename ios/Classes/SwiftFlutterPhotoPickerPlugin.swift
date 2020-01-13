@@ -131,10 +131,10 @@ public class SwiftFlutterPhotoPickerPlugin: NSObject, FlutterPlugin, TLPhotosPic
                         let cachingImageRequestOptions: PHImageRequestOptions = PHImageRequestOptions()
                         cachingImageRequestOptions.isSynchronous = true
 
-                        let thumbnailWidth = self.arguments!["thumbnailWidth"] as? Int ?? 300
-                        let thumbnailHeight = self.arguments!["thumbnailHeight"] as? Int ?? 300
+                        let thumbnailMaxWidth = self.arguments!["thumbnailMaxWidth"] as? Int ?? 320
+                        let thumbnailMaxHeight = self.arguments!["thumbnailMaxHeight"] as? Int ?? 320
                         
-                        let targetSize = CGSize(width: thumbnailWidth, height: thumbnailHeight)
+                        let targetSize = CGSize(width: thumbnailMaxWidth, height: thumbnailMaxHeight)
 
                         cachingImageManager.requestImage(for: asset.phAsset!, targetSize: targetSize, contentMode: .aspectFit, options: cachingImageRequestOptions) { (image, info) in
                             let thumbnailImagePath = NSString(format: "%@%@-thumbnail.jpg", temporaryDirectory, asset.originalFileName!) as String

@@ -115,7 +115,7 @@ public class FlutterPhotoPickerPlugin implements MethodCallHandler, PluginRegist
         Matisse.from(registrar.activity())
                 .choose(mimeTypes)
                 .countable(true)
-                .capture(true)
+                .capture(!"video".equals(mediaType))
                 .captureStrategy(captureStrategy)
                 .maxSelectable(limit)
                 .showSingleMediaType(!multiple)
