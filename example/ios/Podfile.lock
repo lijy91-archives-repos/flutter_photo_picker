@@ -6,7 +6,7 @@ PODS:
   - SVProgressHUD (2.2.5)
 
 DEPENDENCIES:
-  - Flutter (from `.symlinks/flutter/ios`)
+  - Flutter (from `Flutter`)
   - flutter_photo_picker (from `.symlinks/plugins/flutter_photo_picker/ios`)
 
 SPEC REPOS:
@@ -15,15 +15,15 @@ SPEC REPOS:
 
 EXTERNAL SOURCES:
   Flutter:
-    :path: ".symlinks/flutter/ios"
+    :path: Flutter
   flutter_photo_picker:
     :path: ".symlinks/plugins/flutter_photo_picker/ios"
 
 SPEC CHECKSUMS:
   Flutter: 0e3d915762c693b495b44d77113d4970485de6ec
-  flutter_photo_picker: 422d609561f87acc532ee04ec85c33d0ec7db587
+  flutter_photo_picker: 821b093ee200a854d701b54937def4b90f597326
   SVProgressHUD: 1428aafac632c1f86f62aa4243ec12008d7a51d6
 
-PODFILE CHECKSUM: 9b68a2bbea5a6a7e7bf9c3a9c9bfb462c94af4c7
+PODFILE CHECKSUM: 17858697eae28baf2705a22cc4e50f60d00266be
 
 COCOAPODS: 1.6.1
