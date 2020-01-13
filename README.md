@@ -10,7 +10,7 @@ Add this to your package's pubspec.yaml file:
 
 ```yaml
 dependencies:
-  flutter_svprogresshud:
+  flutter_photo_picker:
     git:
       url: https://github.com/blankapp/flutter_photo_picker.git
       ref: master
