@@ -1,26 +1,28 @@
 package org.blankapp.flutterplugins.flutter_photo_picker;
 
 import android.app.Activity;
-import android.content.ContentProvider;
 import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.graphics.Point;
-import android.media.ThumbnailUtils;
 import android.net.Uri;
-import android.webkit.MimeTypeMap;
 
 import com.zhihu.matisse.Matisse;
 import com.zhihu.matisse.MimeType;
 import com.zhihu.matisse.engine.impl.GlideEngine;
-import com.zhihu.matisse.filter.Filter;
+import com.zhihu.matisse.internal.entity.CaptureStrategy;
+import com.zhihu.matisse.internal.utils.PathUtils;
 import com.zhihu.matisse.internal.utils.PhotoMetadataUtils;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import io.flutter.plugin.common.MethodCall;
 import io.flutter.plugin.common.MethodChannel;
@@ -51,7 +53,7 @@ public class FlutterPhotoPickerPlugin implements MethodCallHandler, PluginRegist
     }
 
     private Registrar registrar;
-    private Object arguments;
+    private Map<String, Object> arguments;
     private Result result;
 
     public FlutterPhotoPickerPlugin(Registrar registrar) {
@@ -67,7 +69,7 @@ public class FlutterPhotoPickerPlugin implements MethodCallHandler, PluginRegist
         }
 
         if (call.method.equals("openPicker")) {
-            this.arguments = call.arguments;
+            this.arguments = (HashMap<String, Object>) call.arguments;
             this.result = result;
 
             this.openPicker();
@@ -77,13 +79,49 @@ public class FlutterPhotoPickerPlugin implements MethodCallHandler, PluginRegist
     }
 
     private void openPicker() {
+        String mediaType = "any";
+        boolean multiple = true;
+        int limit = 9;
+        int numberOfColumn = 3;
+
+        if (arguments.containsKey("mediaType"))
+            mediaType = (String) arguments.get("mediaType");
+        if (arguments.containsKey("multiple"))
+            multiple = (boolean) arguments.get("multiple");
+        if (arguments.containsKey("limit"))
+            limit = (int) arguments.get("limit");
+        if (arguments.containsKey("numberOfColumn"))
+            numberOfColumn = (int) arguments.get("numberOfColumn");
+
+        if (!multiple) limit = 1;
+
+        Set<MimeType> mimeTypes = new HashSet<>();
+        if ("image".equals(mediaType)) {
+            mimeTypes = MimeType.ofImage();
+        } else if ("video".equals(mediaType)) {
+            mimeTypes = MimeType.ofVideo();
+        } else {
+            mimeTypes = MimeType.ofAll();
+        }
+
+        final String packageName = registrar.activeContext().getPackageName();
+        CaptureStrategy captureStrategy = new CaptureStrategy(
+                true,
+                new StringBuilder(packageName).append(".provider").toString(),
+                "."
+        );
+
         Matisse.from(registrar.activity())
-                .choose(MimeType.ofAll())
+                .choose(mimeTypes)
                 .countable(true)
-                .maxSelectable(9)
+                .capture(true)
+                .captureStrategy(captureStrategy)
+                .maxSelectable(limit)
+                .showSingleMediaType(!multiple)
                 .restrictOrientation(ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED)
                 .thumbnailScale(0.85f)
                 .imageEngine(new GlideEngine())
+                .spanCount(numberOfColumn)
                 .showPreview(false) // Default is `true`
                 .forResult(REQUEST_CODE_PHOTO_PICKER);
     }
@@ -91,14 +129,13 @@ public class FlutterPhotoPickerPlugin implements MethodCallHandler, PluginRegist
     @Override
     public boolean onActivityResult(final int requestCode, final int resultCode, final Intent data) {
         if (requestCode != REQUEST_CODE_PHOTO_PICKER) return false;
+        if (result == null) return false;
 
         if (resultCode == RESULT_CANCELED) {
             this.result.error("cancelled", "Operation cancelled by user", null);
             this.result = null;
         } else if (resultCode == RESULT_OK) {
-            Activity activity = registrar.activity();
-            ContentResolver contentProvider = registrar.activeContext().getContentResolver();
-
+            Context context= registrar.activeContext();
 
             List<Uri> selectedUris = Matisse.obtainResult(data);
 
@@ -107,44 +144,48 @@ public class FlutterPhotoPickerPlugin implements MethodCallHandler, PluginRegist
                 Uri uri = selectedUris.get(i);
                 Map<String, Object> asset = new HashMap<>();
 
+                String mimeType = FlutterPhotoPickerUtils.getMimeType(context, uri);
+                String type = mimeType.split("/")[0];
+
                 asset.put("selectedOrder", i + 1);
                 asset.put("identifier", uri.toString());
-                asset.put("type", getMimeType(uri).split("/")[0]);
-                asset.put("mimeType", getMimeType(uri));
-//                String mimeType;
+                asset.put("type", type);
+                asset.put("mimeType", mimeType);
 
-                String url = PhotoMetadataUtils.getPath(contentProvider, uri);
-                Point point = PhotoMetadataUtils.getBitmapSize(uri, activity);
+                // Original Image
+                String url = FlutterPhotoPickerUtils.getRealFilePath(context, uri);
+                Point point;
+
+                if ("video".equals(type)) {
+                     point = FlutterPhotoPickerUtils.getVideoSize(context, uri);
+                } else {
+                     point = FlutterPhotoPickerUtils.getImageSize(context, uri);
+                }
 
                 asset.put("url", "file://" + url);
                 asset.put("width", point.x);
                 asset.put("height", point.y);
-//                num width;
-//                num height;
-//                String thumbnailUrl;
-//                num thumbnailWidth;
-//                num thumbnailHeight;
+
+                // Thumbnail Image
+                try {
+                    File thumbnailFile = FlutterPhotoPickerUtils.createThumbnail(context, url, 320, 320, 1);
+                    Point thumbnailPoint = FlutterPhotoPickerUtils.getImageSize(context, Uri.fromFile(thumbnailFile));
+
+                    asset.put("thumbnailUrl", "file://" + thumbnailFile.getAbsolutePath());
+                    asset.put("thumbnailWidth", thumbnailPoint.x);
+                    asset.put("thumbnailHeight", thumbnailPoint.y);
+                } catch (IOException e) {
+                    break;
+                }
 
                 assets.add(asset);
             }
 
-            this.result.success(assets);
-            this.result = null;
+            if (this.result != null) {
+                this.result.success(assets);
+                this.result = null;
+            }
         }
         return true;
-    }
-
-    private String getMimeType(Uri uri) {
-        String mimeType = null;
-        if (uri.getScheme().equals(ContentResolver.SCHEME_CONTENT)) {
-            ContentResolver cr = registrar.activeContext().getContentResolver();
-            mimeType = cr.getType(uri);
-        } else {
-            String fileExtension = MimeTypeMap.getFileExtensionFromUrl(uri
-                    .toString());
-            mimeType = MimeTypeMap.getSingleton().getMimeTypeFromExtension(
-                    fileExtension.toLowerCase());
-        }
-        return mimeType;
     }
 }
