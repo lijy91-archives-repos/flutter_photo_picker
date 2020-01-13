@@ -65,12 +65,13 @@ public class FlutterPhotoPickerPlugin implements MethodCallHandler, PluginRegist
         if (this.result != null) {
             this.result.error("multiple_request", "Cancelled by a second request", null);
             this.result = null;
+            this.arguments = null;
             return;
         }
 
         if (call.method.equals("openPicker")) {
-            this.arguments = (HashMap<String, Object>) call.arguments;
             this.result = result;
+            this.arguments = (HashMap<String, Object>) call.arguments;
 
             this.openPicker();
         } else {
@@ -168,7 +169,15 @@ public class FlutterPhotoPickerPlugin implements MethodCallHandler, PluginRegist
 
                 // Thumbnail Image
                 try {
-                    File thumbnailFile = FlutterPhotoPickerUtils.createThumbnail(context, url, 320, 320, 1);
+                    int thumbnailMaxWidth = 320;
+                    int thumbnailMaxHeight = 320;
+
+                    if (arguments.containsKey("thumbnailMaxWidth"))
+                        thumbnailMaxWidth = (int) arguments.get("thumbnailMaxWidth");
+                    if (arguments.containsKey("thumbnailMaxHeight"))
+                        thumbnailMaxHeight = (int) arguments.get("thumbnailMaxHeight");
+
+                    File thumbnailFile = FlutterPhotoPickerUtils.createThumbnail(context, url, thumbnailMaxWidth, thumbnailMaxHeight, 100);
                     Point thumbnailPoint = FlutterPhotoPickerUtils.getImageSize(context, Uri.fromFile(thumbnailFile));
 
                     asset.put("thumbnailUrl", "file://" + thumbnailFile.getAbsolutePath());
@@ -184,6 +193,7 @@ public class FlutterPhotoPickerPlugin implements MethodCallHandler, PluginRegist
             if (this.result != null) {
                 this.result.success(assets);
                 this.result = null;
+                this.arguments = null;
             }
         }
         return true;
