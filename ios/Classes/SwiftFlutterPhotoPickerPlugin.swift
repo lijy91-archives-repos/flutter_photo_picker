@@ -76,6 +76,7 @@ public class SwiftFlutterPhotoPickerPlugin: NSObject, FlutterPlugin, TLPhotosPic
         }
 
         self.viewController = TLPhotosPickerViewController()
+        self.viewController?.modalPresentationStyle = .fullScreen
         self.viewController?.delegate = self
         self.viewController?.configure = configure
         self.viewController?.selectedAssets = selectedAssets.map { (asset: NSDictionary) -> TLPHAsset in
@@ -136,7 +137,7 @@ public class SwiftFlutterPhotoPickerPlugin: NSObject, FlutterPlugin, TLPhotosPic
                         let targetSize = CGSize(width: thumbnailWidth, height: thumbnailHeight)
 
                         cachingImageManager.requestImage(for: asset.phAsset!, targetSize: targetSize, contentMode: .aspectFit, options: cachingImageRequestOptions) { (image, info) in
-                            let thumbnailImagePath = NSString(format: "%@%@-thumbnal.jpg", temporaryDirectory, asset.originalFileName!) as String
+                            let thumbnailImagePath = NSString(format: "%@%@-thumbnail.jpg", temporaryDirectory, asset.originalFileName!) as String
                             let thumbnailImageURL: URL = URL(fileURLWithPath: thumbnailImagePath)
                             if (fileManager.fileExists(atPath: thumbnailImagePath)) {
                                 try! fileManager.removeItem(atPath: thumbnailImagePath)
