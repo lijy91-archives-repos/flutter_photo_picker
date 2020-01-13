@@ -19,7 +19,7 @@ public class SwiftFlutterPhotoPickerPlugin: NSObject, FlutterPlugin, TLPhotosPic
 
     public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
         if ((self.result) != nil) {
-            self.result!(FlutterError(code: "multiple_request", message: "Cancelled by a second request", details: nil))
+            self.result!(FlutterError(code: "already_active", message: "Photo picker is already active", details: nil))
             self.result = nil
             return
         }

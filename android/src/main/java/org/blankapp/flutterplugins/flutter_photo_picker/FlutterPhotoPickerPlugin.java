@@ -1,7 +1,6 @@
 package org.blankapp.flutterplugins.flutter_photo_picker;
 
-import android.app.Activity;
-import android.content.ContentResolver;
+import android.Manifest;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
@@ -12,8 +11,6 @@ import com.zhihu.matisse.Matisse;
 import com.zhihu.matisse.MimeType;
 import com.zhihu.matisse.engine.impl.GlideEngine;
 import com.zhihu.matisse.internal.entity.CaptureStrategy;
-import com.zhihu.matisse.internal.utils.PathUtils;
-import com.zhihu.matisse.internal.utils.PhotoMetadataUtils;
 
 import java.io.File;
 import java.io.IOException;
@@ -37,8 +34,11 @@ import static android.app.Activity.RESULT_OK;
 /**
  * FlutterPhotoPickerPlugin
  */
-public class FlutterPhotoPickerPlugin implements MethodCallHandler, PluginRegistry.ActivityResultListener {
+public class FlutterPhotoPickerPlugin implements MethodCallHandler,
+        PluginRegistry.ActivityResultListener {
     private static final int REQUEST_CODE_PHOTO_PICKER = 9191;
+
+    private static final String CALL_METHOD_OPEN_PICKER = "openPicker";
 
     /**
      * Plugin registration.
@@ -48,32 +48,48 @@ public class FlutterPhotoPickerPlugin implements MethodCallHandler, PluginRegist
         final FlutterPhotoPickerPlugin instance = new FlutterPhotoPickerPlugin(registrar);
 
         registrar.addActivityResultListener(instance);
+        registrar.addRequestPermissionsResultListener(instance.permissionManager);
 
         channel.setMethodCallHandler(instance);
     }
 
+    private PermissionManager permissionManager;
+
     private Registrar registrar;
-    private Map<String, Object> arguments;
-    private Result result;
+
+    private Result pendingResult;
+    private Map<String, Object> pendingArguments;
 
     public FlutterPhotoPickerPlugin(Registrar registrar) {
         this.registrar = registrar;
+        this.permissionManager = new PermissionManager(registrar.activity());
     }
 
     @Override
     public void onMethodCall(MethodCall call, Result result) {
-        if (this.result != null) {
-            this.result.error("multiple_request", "Cancelled by a second request", null);
-            this.result = null;
-            this.arguments = null;
+        if (this.pendingResult != null) {
+            finishWithAlreadyActiveError(result);
             return;
         }
 
-        if (call.method.equals("openPicker")) {
-            this.result = result;
-            this.arguments = (HashMap<String, Object>) call.arguments;
+        if (call.method.equals(CALL_METHOD_OPEN_PICKER)) {
+            pendingResult = result;
+            pendingArguments = (HashMap<String, Object>) call.arguments;
 
-            this.openPicker();
+            permissionManager.askPermission(new String[]{
+                    Manifest.permission.WRITE_EXTERNAL_STORAGE,
+                    Manifest.permission.CAMERA,
+            }, new PermissionManager.Callback() {
+                @Override
+                public void onGranted() {
+                    openPicker();
+                }
+
+                @Override
+                public void onDenied() {
+                    finishWithError("permission_request_denied", "Permission request denied");
+                }
+            });
         } else {
             result.notImplemented();
         }
@@ -85,14 +101,14 @@ public class FlutterPhotoPickerPlugin implements MethodCallHandler, PluginRegist
         int limit = 9;
         int numberOfColumn = 3;
 
-        if (arguments.containsKey("mediaType"))
-            mediaType = (String) arguments.get("mediaType");
-        if (arguments.containsKey("multiple"))
-            multiple = (boolean) arguments.get("multiple");
-        if (arguments.containsKey("limit"))
-            limit = (int) arguments.get("limit");
-        if (arguments.containsKey("numberOfColumn"))
-            numberOfColumn = (int) arguments.get("numberOfColumn");
+        if (pendingArguments.containsKey("mediaType"))
+            mediaType = (String) pendingArguments.get("mediaType");
+        if (pendingArguments.containsKey("multiple"))
+            multiple = (boolean) pendingArguments.get("multiple");
+        if (pendingArguments.containsKey("limit"))
+            limit = (int) pendingArguments.get("limit");
+        if (pendingArguments.containsKey("numberOfColumn"))
+            numberOfColumn = (int) pendingArguments.get("numberOfColumn");
 
         if (!multiple) limit = 1;
 
@@ -130,13 +146,12 @@ public class FlutterPhotoPickerPlugin implements MethodCallHandler, PluginRegist
     @Override
     public boolean onActivityResult(final int requestCode, final int resultCode, final Intent data) {
         if (requestCode != REQUEST_CODE_PHOTO_PICKER) return false;
-        if (result == null) return false;
+        if (pendingResult == null) return false;
 
         if (resultCode == RESULT_CANCELED) {
-            this.result.error("cancelled", "Operation cancelled by user", null);
-            this.result = null;
+            finishWithError("cancelled", "Operation cancelled by user");
         } else if (resultCode == RESULT_OK) {
-            Context context= registrar.activeContext();
+            Context context = registrar.activeContext();
 
             List<Uri> selectedUris = Matisse.obtainResult(data);
 
@@ -158,9 +173,9 @@ public class FlutterPhotoPickerPlugin implements MethodCallHandler, PluginRegist
                 Point point;
 
                 if ("video".equals(type)) {
-                     point = FlutterPhotoPickerUtils.getVideoSize(context, uri);
+                    point = FlutterPhotoPickerUtils.getVideoSize(context, uri);
                 } else {
-                     point = FlutterPhotoPickerUtils.getImageSize(context, uri);
+                    point = FlutterPhotoPickerUtils.getImageSize(context, uri);
                 }
 
                 asset.put("url", "file://" + url);
@@ -172,10 +187,10 @@ public class FlutterPhotoPickerPlugin implements MethodCallHandler, PluginRegist
                     int thumbnailMaxWidth = 320;
                     int thumbnailMaxHeight = 320;
 
-                    if (arguments.containsKey("thumbnailMaxWidth"))
-                        thumbnailMaxWidth = (int) arguments.get("thumbnailMaxWidth");
-                    if (arguments.containsKey("thumbnailMaxHeight"))
-                        thumbnailMaxHeight = (int) arguments.get("thumbnailMaxHeight");
+                    if (pendingArguments.containsKey("thumbnailMaxWidth"))
+                        thumbnailMaxWidth = (int) pendingArguments.get("thumbnailMaxWidth");
+                    if (pendingArguments.containsKey("thumbnailMaxHeight"))
+                        thumbnailMaxHeight = (int) pendingArguments.get("thumbnailMaxHeight");
 
                     File thumbnailFile = FlutterPhotoPickerUtils.createThumbnail(context, url, thumbnailMaxWidth, thumbnailMaxHeight, 100);
                     Point thumbnailPoint = FlutterPhotoPickerUtils.getImageSize(context, Uri.fromFile(thumbnailFile));
@@ -190,12 +205,30 @@ public class FlutterPhotoPickerPlugin implements MethodCallHandler, PluginRegist
                 assets.add(asset);
             }
 
-            if (this.result != null) {
-                this.result.success(assets);
-                this.result = null;
-                this.arguments = null;
-            }
+            finishWithSuccess(assets);
         }
         return true;
+    }
+
+    private void finishWithSuccess(Object data) {
+        if (pendingResult == null) {
+            return;
+        }
+        pendingResult.success(data);
+        pendingResult = null;
+        pendingArguments = null;
+    }
+
+    private void finishWithAlreadyActiveError(MethodChannel.Result result) {
+        result.error("already_active", "Photo picker is already active", null);
+    }
+
+    private void finishWithError(String errorCode, String errorMessage) {
+        if (pendingResult == null) {
+            return;
+        }
+        pendingResult.error(errorCode, errorMessage, null);
+        pendingResult = null;
+        pendingArguments = null;
     }
 }

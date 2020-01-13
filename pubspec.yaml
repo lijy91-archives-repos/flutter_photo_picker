@@ -1,8 +1,8 @@
 name: flutter_photo_picker
-description: A new flutter plugin project.
+description: Photo Picker plugin for Flutter.
 version: 0.0.1
-author:
-homepage:
+author: LiJianying <lijy91@foxmail.com>
+homepage: https://github.com/blankapp/flutter_photo_picker
 
 environment:
   sdk: ">=2.1.0 <3.0.0"

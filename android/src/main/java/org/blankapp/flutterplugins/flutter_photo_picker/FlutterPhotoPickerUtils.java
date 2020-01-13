@@ -1,8 +1,11 @@
 package org.blankapp.flutterplugins.flutter_photo_picker;
 
+import android.Manifest;
 import android.app.Activity;
 import android.content.ContentResolver;
 import android.content.Context;
+import android.content.pm.PackageInfo;
+import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -12,6 +15,7 @@ import android.media.ExifInterface;
 import android.media.MediaMetadataRetriever;
 import android.media.ThumbnailUtils;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Environment;
 import android.provider.MediaStore;
 import android.text.TextUtils;
@@ -24,6 +28,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.Arrays;
 
 class FlutterPhotoPickerUtils {
     public static String getRealFilePath(Context context, Uri uri) {
@@ -154,6 +159,35 @@ class FlutterPhotoPickerUtils {
         resized.recycle();
 
         return resizeImageFile;
+    }
+
+    /** returns true, if permission present in manifest, otherwise false */
+    private static boolean isPermissionPresentInManifest(Context context, String permissionName) {
+        try {
+            PackageManager packageManager = context.getPackageManager();
+            PackageInfo packageInfo =
+                    packageManager.getPackageInfo(context.getPackageName(), PackageManager.GET_PERMISSIONS);
+
+            String[] requestedPermissions = packageInfo.requestedPermissions;
+            return Arrays.asList(requestedPermissions).contains(permissionName);
+        } catch (PackageManager.NameNotFoundException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    /**
+     * Camera permission need request if it present in manifest, because for M or great for take Photo
+     * ar Video by intent need it permission, even if the camera permission is not used.
+     *
+     * <p>Camera permission may be used in another package, as example flutter_barcode_reader.
+     * https://github.com/flutter/flutter/issues/29837
+     *
+     * @return returns true, if need request camera permission, otherwise false
+     */
+    static boolean needRequestCameraPermission(Context context) {
+        boolean greatOrEqualM = Build.VERSION.SDK_INT >= Build.VERSION_CODES.M;
+        return greatOrEqualM && isPermissionPresentInManifest(context, Manifest.permission.CAMERA);
     }
 
     private static int getRotationInDegreesForOrientationTag(int orientationTag) {
