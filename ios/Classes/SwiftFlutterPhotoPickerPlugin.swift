@@ -56,6 +56,7 @@ public class SwiftFlutterPhotoPickerPlugin: NSObject, FlutterPlugin, TLPhotosPic
         configure.maxSelectedAssets = limit
         configure.numberOfColumn = numberOfColumn
         configure.autoPlay = false
+        configure.usedCameraButton = mediaType != "video"
         
         if (options != nil) {
             if let tapHereToChange = options?["tapHereToChange"] {
