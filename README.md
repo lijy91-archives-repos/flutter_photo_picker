@@ -16,6 +16,14 @@ dependencies:
       ref: master
 ```
 
+Change your project `ios/Podfile` file according to the example:
+
+```diff
+# Uncomment this line to define a global platform for your project
+-# platform :ios, '8.0'
++platform :ios, '9.1'
+```
+
 You can install packages from the command line:
 
 ```bash
