@@ -17,7 +17,6 @@ Pod::Spec.new do |s|
   s.source_files = 'Classes/**/*.{h,m,xib,swift}'
   s.public_header_files = 'Classes/**/*.h'
   s.dependency 'Flutter'
-  s.dependency 'SVProgressHUD'
   s.platform = :ios, '9.1'
 
   # Flutter.framework does not contain a i386 slice. Only x86_64 simulators are supported.

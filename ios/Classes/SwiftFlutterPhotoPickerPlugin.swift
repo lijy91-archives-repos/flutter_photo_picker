@@ -1,7 +1,7 @@
 import Flutter
 import UIKit
 import Photos
-import SVProgressHUD
+// import SVProgressHUD
 
 public class SwiftFlutterPhotoPickerPlugin: NSObject, FlutterPlugin, TLPhotosPickerViewControllerDelegate {
     public static func register(with registrar: FlutterPluginRegistrar) {
@@ -93,7 +93,7 @@ public class SwiftFlutterPhotoPickerPlugin: NSObject, FlutterPlugin, TLPhotosPic
     public func dismissPhotoPicker(withTLPHAssets: [TLPHAsset]) {
         DispatchQueue.global().async {
             DispatchQueue.main.async {
-                SVProgressHUD.show(withStatus: self.t("Processing..."))
+                // SVProgressHUD.show(withStatus: self.t("Processing..."))
             }
             
             let cachingImageManager = PHCachingImageManager()
@@ -166,7 +166,7 @@ public class SwiftFlutterPhotoPickerPlugin: NSObject, FlutterPlugin, TLPhotosPic
                 self.result!(medias)
                 self.result = nil
 
-                SVProgressHUD.dismiss()
+                // SVProgressHUD.dismiss()
             }
         }
     }
@@ -207,17 +207,17 @@ public class SwiftFlutterPhotoPickerPlugin: NSObject, FlutterPlugin, TLPhotosPic
 
                     return
                 }
-                SVProgressHUD.show()
+                // SVProgressHUD.show()
                 var tlphAsset: TLPHAsset = TLPHAsset.asset(with: phAsset.localIdentifier)!
                 self.downloadingImageRequestID = tlphAsset.cloudImageDownload(
                     progressBlock: { (progress) in
                         print(progress)
                         if (progress > 0) {
-                            SVProgressHUD.showProgress(Float(progress))
+                            // SVProgressHUD.showProgress(Float(progress))
                         }
                     },
                     completionBlock: { (image) in
-                        SVProgressHUD.dismiss()
+                        // SVProgressHUD.dismiss()
 
                         tlphAsset.selectedOrder = (self.viewController?.selectedAssets.count)! + 1;
                         self.viewController?.selectedAssets.append(tlphAsset)
